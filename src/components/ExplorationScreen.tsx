@@ -74,7 +74,6 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
   useEffect(() => {
     let cancelled = false;
     accumulatedPixscale.current = target.pixscale;
-    setLiveTransform({ tx: 0, ty: 0, scale: 1 });
 
     const key = cutoutCacheKey(target.ra_deg, target.dec_deg, target.pixscale);
     const cached = cutoutCache.get(key);
@@ -91,6 +90,10 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
     if (cached) {
       setDisplayUrl(cached);
       setStatus("ready");
+      // Reset the gesture transform in the same tick as the swap, so the
+      // view holds its dragged/zoomed position right up until the freshly
+      // centered image is actually on screen — no premature snap-back.
+      setLiveTransform({ tx: 0, ty: 0, scale: 1 });
       return;
     }
 
@@ -101,8 +104,10 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
         cutoutCache.set(key, url);
         setDisplayUrl(url);
         setStatus("ready");
+        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
       } else {
         setStatus("error");
+        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
       }
     });
 
