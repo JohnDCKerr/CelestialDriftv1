@@ -1,0 +1,13 @@
+{
+  "name": "Celestial Drift",
+  "short_name": "Celestial Drift",
+  "description": "Float the Cosmos. Drift through real astronomical survey imagery.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050705",
+  "theme_color": "#050705",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

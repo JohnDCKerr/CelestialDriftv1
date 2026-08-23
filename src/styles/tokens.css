@@ -1,0 +1,37 @@
+:root {
+  /* Base */
+  --cd-black: #050705;
+  --cd-black-raised: #0b0f0c;
+  --cd-black-elevated: #10150f;
+  --cd-hairline: rgba(140, 255, 210, 0.16);
+  --cd-hairline-strong: rgba(140, 255, 210, 0.32);
+
+  /* Phosphor cyan/green — primary UI accent */
+  --cd-phosphor: #59f7c2;
+  --cd-phosphor-dim: #2f8f75;
+  --cd-phosphor-glow: rgba(89, 247, 194, 0.35);
+
+  /* Warm yellow — secondary accent, used for primary actions (GO, WORMHOLE) */
+  --cd-yellow: #f2b93a;
+  --cd-yellow-dim: #a67f2c;
+
+  /* Coral — rare, only for alerts/errors */
+  --cd-coral: #ff7a63;
+
+  /* Text */
+  --cd-off-white: #eeeee6;
+  --cd-off-white-dim: rgba(238, 238, 230, 0.62);
+  --cd-off-white-faint: rgba(238, 238, 230, 0.34);
+
+  /* Type */
+  --cd-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --cd-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Layout */
+  --cd-radius-sm: 4px;
+  --cd-radius-md: 10px;
+  --cd-radius-lg: 18px;
+  --cd-dock-height: 84px;
+  --cd-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --cd-safe-top: env(safe-area-inset-top, 0px);
+}

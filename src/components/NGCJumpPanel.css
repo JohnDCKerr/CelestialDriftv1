@@ -1,0 +1,118 @@
+.cd-ngc {
+  padding-top: 4px;
+}
+
+.cd-ngc__label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--cd-phosphor);
+  margin-bottom: 8px;
+}
+
+.cd-ngc__inputrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--cd-hairline-strong);
+  border-radius: var(--cd-radius-md);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.cd-ngc__input {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: var(--cd-yellow);
+  min-width: 0;
+}
+
+.cd-ngc__input::placeholder {
+  color: var(--cd-off-white-faint);
+}
+
+.cd-ngc__backspace {
+  color: var(--cd-off-white-dim);
+  padding: 6px;
+}
+
+.cd-ngc__keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cd-ngc__key {
+  min-height: 52px;
+  border-radius: var(--cd-radius-md);
+  border: 1px solid var(--cd-hairline);
+  background: rgba(255, 255, 255, 0.03);
+  font-family: var(--cd-font-mono);
+  font-size: 18px;
+  color: var(--cd-off-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.cd-ngc__key:active {
+  background: rgba(89, 247, 194, 0.12);
+}
+
+.cd-ngc__key--go {
+  background: var(--cd-yellow);
+  color: #14170f;
+  font-weight: 600;
+  border-color: var(--cd-yellow);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.cd-ngc__key--surprise {
+  color: var(--cd-phosphor);
+}
+
+.cd-ngc__hint {
+  font-size: 11px;
+  color: var(--cd-coral);
+  margin: 0 0 8px;
+}
+
+.cd-ngc__footnote {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--cd-off-white-faint);
+  margin-top: 14px;
+}
+
+.cd-ngc__miss {
+  padding: 18px 4px 6px;
+  text-align: center;
+}
+
+.cd-ngc__miss-title {
+  font-family: var(--cd-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--cd-off-white);
+  margin: 0 0 8px;
+}
+
+.cd-ngc__miss-body {
+  font-size: 12.5px;
+  color: var(--cd-off-white-dim);
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.cd-ngc__miss-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
