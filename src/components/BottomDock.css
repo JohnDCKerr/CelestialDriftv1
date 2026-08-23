@@ -28,8 +28,9 @@
   gap: 4px;
   padding: 6px 2px;
   min-width: 0;
-  color: var(--cd-off-white-faint);
+  color: var(--cd-phosphor-dim);
   border-radius: var(--cd-radius-sm);
+  transition: color 160ms ease;
 }
 
 .cd-dock__item span {
@@ -42,12 +43,16 @@
   max-width: 100%;
 }
 
+.cd-dock__item svg {
+  filter: drop-shadow(0 0 3px rgba(47, 143, 117, 0.45));
+}
+
 .cd-dock__item.is-active {
   color: var(--cd-phosphor);
 }
 
 .cd-dock__item.is-active svg {
-  filter: drop-shadow(0 0 6px var(--cd-phosphor-glow));
+  filter: drop-shadow(0 0 7px var(--cd-phosphor-glow));
 }
 
 .cd-dock__item:active {
