@@ -18,6 +18,10 @@ import "./ExplorationScreen.css";
 const MIN_PIXSCALE = 0.05;
 const MAX_PIXSCALE = 3.2;
 const SETTLE_DEBOUNCE_MS = 480;
+// Below this much movement, a gesture is treated as noise (an accidental
+// tap or brush) rather than an intentional pan/zoom — no re-fetch happens.
+const MIN_COMMIT_PX = 6;
+const MIN_COMMIT_SCALE_DELTA = 0.02;
 
 // Warp (wormhole) timing: a brief "falling forward" phase, then a blend
 // into the new destination. Kept short and elegant, not an arcade effect.
@@ -68,6 +72,15 @@ export default function ExplorationScreen({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [viewportSize, setViewportSize] = useState({ w: 512, h: 512 });
   const [status, setStatus] = useState<LoadStatus>("loading");
+  // Only appears if a fetch takes noticeably long — most loads resolve well
+  // before this fires and the user never sees it. This is the "absolutely
+  // necessary" exception to the no-spinners design goal: with zero feedback
+  // at all, a genuinely slow Legacy Survey response (their cutout endpoint
+  // generates images on demand and can be slow under load) just looks like
+  // the app is frozen or broken, which is worse than a small honest hint
+  // that it's still working.
+  const [slowLoad, setSlowLoad] = useState(false);
+  const slowLoadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [layers, setLayers] = useState<RenderLayer[]>([]);
   const [arrivalLabel, setArrivalLabel] = useState<string | null>(null);
   const [warpRingsVisible, setWarpRingsVisible] = useState(false);
@@ -271,12 +284,19 @@ export default function ExplorationScreen({
 
     // Only the very first image ever shown blocks on a loading state — every
     // subsequent load keeps showing existing imagery (frozen/transformed)
-    // rather than interrupting with a spinner.
+    // rather than interrupting with a spinner, unless it's taking a while
+    // (see slowLoad above).
     if (layers.length === 0) setStatus("loading");
+
+    if (slowLoadTimer.current) clearTimeout(slowLoadTimer.current);
+    setSlowLoad(false);
+    slowLoadTimer.current = setTimeout(() => setSlowLoad(true), 650);
 
     const { promise, cancel } = preloadImage(url);
     promise.then((ok) => {
       if (cancelled) return;
+      if (slowLoadTimer.current) clearTimeout(slowLoadTimer.current);
+      setSlowLoad(false);
       if (ok) {
         cutoutCache.set(key, url);
         if (layers.length === 0) {
@@ -293,6 +313,8 @@ export default function ExplorationScreen({
     return () => {
       cancelled = true;
       cancel();
+      if (slowLoadTimer.current) clearTimeout(slowLoadTimer.current);
+      setSlowLoad(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey, viewportSize.w, viewportSize.h, warpTick]);
@@ -331,7 +353,11 @@ export default function ExplorationScreen({
   // Uses the same visual clamp as rendering (never below scale 1) so what
   // gets frozen exactly matches what was actually on screen — using the
   // true unclamped scale here would cause a visible pop at release.
-  const freezeAndResetWrapper = useCallback((tx: number, ty: number, scale: number) => {
+  // Freezes exactly what's on screen into the (about-to-be-replaced) image
+  // layer's own transform, without touching liveTransform — callers decide
+  // separately how/when to reset the wrapper, since the pointer-gesture and
+  // wheel-gesture paths need to do that reset differently (see below).
+  const freezeLayers = useCallback((tx: number, ty: number, scale: number) => {
     const visualScale = Math.max(1, scale);
     setLayers((prev) =>
       prev.map((l) => ({
@@ -340,8 +366,15 @@ export default function ExplorationScreen({
         transitionMs: 0,
       }))
     );
-    setLiveTransform({ tx: 0, ty: 0, scale: 1 });
   }, []);
+
+  const freezeAndResetWrapper = useCallback(
+    (tx: number, ty: number, scale: number) => {
+      freezeLayers(tx, ty, scale);
+      setLiveTransform({ tx: 0, ty: 0, scale: 1 });
+    },
+    [freezeLayers]
+  );
 
   // --- Pointer (mouse + touch) handling: 1 finger pans, 2 fingers pinch-zoom ---
   const onPointerDown = (e: React.PointerEvent) => {
@@ -383,6 +416,20 @@ export default function ExplorationScreen({
       setIsGesturing(false);
       gestureStart.current = null;
       const { tx, ty, scale } = liveTransform;
+
+      // A tap or barely-there touch shouldn't trigger a real re-fetch at
+      // all. Below this threshold, treat it as noise and just reset —
+      // otherwise even an accidental micro-nudge forces a brand new
+      // coordinate lookup, and if you happen to be sitting near the edge
+      // of the survey's actual coverage, that tiny nudge alone can be
+      // enough to land just outside it and show the empty-coverage state.
+      const negligible = Math.abs(tx) < MIN_COMMIT_PX && Math.abs(ty) < MIN_COMMIT_PX && Math.abs(scale - 1) < MIN_COMMIT_SCALE_DELTA;
+
+      if (negligible) {
+        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
+        return;
+      }
+
       freezeAndResetWrapper(tx, ty, scale);
       if (settleTimer.current) clearTimeout(settleTimer.current);
       settleTimer.current = setTimeout(() => commitDrift(-tx, -ty, scale), 60);
@@ -402,9 +449,12 @@ export default function ExplorationScreen({
     wheelTimer.current = setTimeout(() => {
       setIsGesturing(false);
       setLiveTransform((t) => {
-        freezeAndResetWrapper(t.tx, t.ty, t.scale);
+        const negligible =
+          Math.abs(t.tx) < MIN_COMMIT_PX && Math.abs(t.ty) < MIN_COMMIT_PX && Math.abs(t.scale - 1) < MIN_COMMIT_SCALE_DELTA;
+        if (negligible) return { tx: 0, ty: 0, scale: 1 };
+        freezeLayers(t.tx, t.ty, t.scale);
         commitDrift(-t.tx, -t.ty, t.scale);
-        return t;
+        return { tx: 0, ty: 0, scale: 1 };
       });
     }, SETTLE_DEBOUNCE_MS);
   };
@@ -498,6 +548,12 @@ export default function ExplorationScreen({
       {status === "loading" && layers.length === 0 && (
         <div className="cd-explore__loading">
           <div className="cd-explore__loading-pulse" />
+        </div>
+      )}
+
+      {slowLoad && layers.length > 0 && status !== "error" && (
+        <div className="cd-slowload" aria-hidden="true">
+          <span />
         </div>
       )}
 
