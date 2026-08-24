@@ -53,8 +53,10 @@
   inset: 0;
   z-index: 40;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 22px;
   background: var(--cd-black);
   transition: opacity 900ms ease, transform 900ms cubic-bezier(0.3, 0, 0.2, 1);
 }
@@ -109,6 +111,24 @@
   to {
     transform: rotate(0deg);
   }
+}
+
+.cd-intro__title {
+  font-family: var(--cd-font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: var(--cd-off-white);
+  text-align: center;
+}
+
+.cd-intro__tagline {
+  font-family: var(--cd-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--cd-yellow);
+  text-align: center;
+  margin-top: -14px;
 }
 
 .cd-slowload {

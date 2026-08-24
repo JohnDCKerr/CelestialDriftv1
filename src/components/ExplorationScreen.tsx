@@ -583,6 +583,8 @@ export default function ExplorationScreen({
             <span />
             <span />
           </div>
+          <div className="cd-intro__title">CELESTIAL DRIFT</div>
+          <div className="cd-intro__tagline">FLOAT THE COSMOS.</div>
         </div>
       )}
 
