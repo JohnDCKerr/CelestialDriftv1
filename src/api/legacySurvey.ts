@@ -95,11 +95,40 @@ class CutoutCache {
 export const cutoutCache = new CutoutCache();
 
 /** Preload an image URL into the browser cache; resolves true on success, false on failure. */
-export function preloadImage(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
+/**
+ * Preload an image URL. Returns both the resolving promise and a `cancel`
+ * function that genuinely aborts the in-flight network request (by clearing
+ * the Image's src) rather than just telling the caller to ignore the
+ * result. This matters a lot in practice: every pan/zoom settle fires a new
+ * request, and without real cancellation, rapid consecutive pans can leave
+ * several real downloads competing for the same connections — on a real
+ * network, the newest (actually wanted) one can end up stuck queued behind
+ * abandoned ones nobody's waiting for anymore, sometimes never resolving.
+ */
+export function preloadImage(url: string): { promise: Promise<boolean>; cancel: () => void } {
+  const img = new Image();
+  let settled = false;
+
+  const promise = new Promise<boolean>((resolve) => {
+    img.onload = () => {
+      settled = true;
+      resolve(true);
+    };
+    img.onerror = () => {
+      settled = true;
+      resolve(false);
+    };
     img.src = url;
   });
+
+  const cancel = () => {
+    if (settled) return;
+    img.onload = null;
+    img.onerror = null;
+    // Clearing src is the standard way to abort an in-flight <img>/Image
+    // network request in the browser.
+    img.src = "";
+  };
+
+  return { promise, cancel };
 }
