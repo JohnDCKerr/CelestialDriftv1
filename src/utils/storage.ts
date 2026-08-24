@@ -41,3 +41,21 @@ export function isSaved(ra_deg: number, dec_deg: number): boolean {
   const id = `${ra_deg.toFixed(4)}:${dec_deg.toFixed(4)}`;
   return loadSaved().some((d) => d.id === id);
 }
+
+const HINT_KEY = "celestial-drift.first-run-hint-seen.v1";
+
+export function hasSeenFirstRunHint(): boolean {
+  try {
+    return localStorage.getItem(HINT_KEY) === "1";
+  } catch {
+    return true; // if storage is unavailable, don't risk showing it repeatedly
+  }
+}
+
+export function markFirstRunHintSeen(): void {
+  try {
+    localStorage.setItem(HINT_KEY, "1");
+  } catch {
+    // ignore
+  }
+}
