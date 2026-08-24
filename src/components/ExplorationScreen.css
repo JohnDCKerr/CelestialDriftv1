@@ -15,22 +15,22 @@
 
 .cd-explore__autodrift {
   position: absolute;
-  inset: -3%;
+  inset: -5%;
 }
 
 .cd-explore__autodrift.is-drifting {
-  animation: cd-autodrift 32s ease-in-out infinite alternate;
+  animation: cd-autodrift 22s ease-in-out infinite alternate;
 }
 
 @keyframes cd-autodrift {
   0% {
-    transform: translate(0, 0) scale(1.03);
+    transform: translate(0, 0) scale(1.08);
   }
   50% {
-    transform: translate(-16px, 11px) scale(1.045);
+    transform: translate(-30px, 20px) scale(1.11);
   }
   100% {
-    transform: translate(13px, -9px) scale(1.03);
+    transform: translate(24px, -16px) scale(1.08);
   }
 }
 

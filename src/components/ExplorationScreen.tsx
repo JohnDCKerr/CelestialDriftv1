@@ -78,6 +78,7 @@ export default function ExplorationScreen({
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accumulatedPixscale = useRef(target.pixscale);
   const nextLayerId = useRef(0);
+  const activeTransitionId = useRef(0);
   const lastWarpTick = useRef(warpTick);
   const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -138,11 +139,22 @@ export default function ExplorationScreen({
   // Cross-fade the incoming image in over the outgoing one(s), rather than a
   // hard swap. If `warp` is true, first gives the outgoing layer a brief
   // "falling forward" treatment (scale + blur + dim) before blending.
+  //
+  // Every async step below (both animation frames, and the cleanup timeout)
+  // is guarded against `activeTransitionId`. Without this, firing two
+  // transitions in quick succession (e.g. tapping zoom twice, or panning
+  // then immediately zooming) could let an older, in-flight transition's
+  // delayed cleanup step run *after* a newer one had already taken over —
+  // wiping out the newer image mid-fade and causing a visible flicker/glitch.
+  // Only the most recently started transition is ever allowed to touch state.
   const runTransition = useCallback(
     (url: string, warp: boolean, arrivalName: string | null) => {
       const incomingId = ++nextLayerId.current;
+      activeTransitionId.current = incomingId;
 
       const startCrossfade = () => {
+        if (activeTransitionId.current !== incomingId) return;
+
         setLayers((prev) => [
           ...prev,
           {
@@ -157,6 +169,7 @@ export default function ExplorationScreen({
 
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            if (activeTransitionId.current !== incomingId) return;
             const ms = warp ? WARP_CROSSFADE_MS : PLAIN_CROSSFADE_MS;
             setLayers((prev) =>
               prev.map((l) =>
@@ -171,6 +184,7 @@ export default function ExplorationScreen({
         if (transitionTimer.current) clearTimeout(transitionTimer.current);
         transitionTimer.current = setTimeout(
           () => {
+            if (activeTransitionId.current !== incomingId) return;
             setLayers((prev) =>
               prev.filter((l) => l.id === incomingId).map((l) => ({ ...l, transitionMs: 0 }))
             );
@@ -223,7 +237,9 @@ export default function ExplorationScreen({
     });
 
     const applyFirstEver = (u: string) => {
-      setLayers([{ id: ++nextLayerId.current, url: u, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
+      const id = ++nextLayerId.current;
+      activeTransitionId.current = id;
+      setLayers([{ id, url: u, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
       setStatus("ready");
       if (hintEligible.current && !hintShown.current) {
         hintShown.current = true;
@@ -377,7 +393,9 @@ export default function ExplorationScreen({
         return;
       }
       if (layers.length === 0) {
-        setLayers([{ id: ++nextLayerId.current, url, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
+        const id = ++nextLayerId.current;
+        activeTransitionId.current = id;
+        setLayers([{ id, url, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
         setStatus("ready");
       } else {
         setStatus("ready");
