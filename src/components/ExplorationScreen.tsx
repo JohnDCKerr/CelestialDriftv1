@@ -191,6 +191,14 @@ export default function ExplorationScreen({
               : { ...l, opacity: 0, transitionMs: PLAIN_CROSSFADE_MS }
           )
         );
+        // Reset the shared gesture wrapper back to identity now, in sync
+        // with the crossfade starting — NOT earlier (that would snap the
+        // still-visible old image back to center before the new one is
+        // even ready) and not later (that would pop after the crossfade
+        // already finished). The wrapper's own transition eases this
+        // smoothly rather than jumping, since we're not actively gesturing
+        // at this point.
+        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
       });
     });
 
@@ -238,6 +246,7 @@ export default function ExplorationScreen({
       const id = ++nextLayerId.current;
       activeTransitionId.current = id;
       setLayers([{ id, url: u, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
+      setLiveTransform({ tx: 0, ty: 0, scale: 1 });
       setStatus("ready");
       if (hintEligible.current && !hintShown.current) {
         hintShown.current = true;
@@ -396,6 +405,7 @@ export default function ExplorationScreen({
         const id = ++nextLayerId.current;
         activeTransitionId.current = id;
         setLayers([{ id, url, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
+        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
         setStatus("ready");
       } else {
         setStatus("ready");
@@ -412,9 +422,19 @@ export default function ExplorationScreen({
   // Slight (60ms) smoothing on the shared gesture transform — softens jitter
   // without adding perceptible input lag — plus a gentler ease once a
   // gesture settles back toward the frame.
+  //
+  // The VISUAL scale is clamped to never go below 1 — pinching in (zoom
+  // out) still tracks the real, unclamped intent (liveTransform.scale) for
+  // computing the correct wider pixscale on release, but visually shrinking
+  // the one already-loaded flat image below full-frame size would just
+  // reveal black around it, since there's no more real sky data beyond its
+  // edges to "zoom out into." A genuinely wider view arrives properly (with
+  // real imagery, crossfaded in) once the gesture settles and a fresh,
+  // wider-FOV cutout is fetched.
   const wrapTransition = isGesturing ? "transform 60ms linear" : "transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+  const visualScale = Math.max(1, liveTransform.scale);
   const wrapStyle: React.CSSProperties = {
-    transform: `translate(${liveTransform.tx}px, ${liveTransform.ty}px) scale(${liveTransform.scale})`,
+    transform: `translate(${liveTransform.tx}px, ${liveTransform.ty}px) scale(${visualScale})`,
     transition: wrapTransition,
   };
 
