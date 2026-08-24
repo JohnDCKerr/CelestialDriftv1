@@ -39,7 +39,7 @@
     "suggested_pixscale": 0.7,
     "type": "Elliptical galaxy",
     "constellation": "Virgo",
-    "humanFact": "At its center sits the black hole from the first photograph ever taken of one — you're seeing the galaxy, not the hole itself."
+    "humanFact": "At its center sits the black hole from the first photograph ever taken of one \u2014 you're seeing the galaxy, not the hole itself."
   },
   {
     "id": "ngc4565",
@@ -109,7 +109,7 @@
     "suggested_pixscale": 0.8,
     "type": "Spiral galaxy",
     "constellation": "Ursa Major",
-    "humanFact": "This is one of the closest large galaxies to our own — close enough that its gravity is slowly reshaping its neighbor."
+    "humanFact": "This is one of the closest large galaxies to our own \u2014 close enough that its gravity is slowly reshaping its neighbor."
   },
   {
     "id": "m82",
@@ -151,7 +151,7 @@
     "suggested_pixscale": 0.7,
     "type": "Spiral galaxy",
     "constellation": "Cepheus",
-    "humanFact": "Astronomers have watched ten stars explode in this one galaxy over the last century alone — an unusually high number."
+    "humanFact": "Astronomers have watched ten stars explode in this one galaxy over the last century alone \u2014 an unusually high number."
   },
   {
     "id": "ngc253",
@@ -179,7 +179,7 @@
     "suggested_pixscale": 0.55,
     "type": "Spiral galaxy",
     "constellation": "Pegasus",
-    "humanFact": "This galaxy is close to the same size and shape as the Milky Way — a mirror of home, 40 million years in the past."
+    "humanFact": "This galaxy is close to the same size and shape as the Milky Way \u2014 a mirror of home, 40 million years in the past."
   },
   {
     "id": "ngc7293",
@@ -304,7 +304,7 @@
     "description": "A well-studied Seyfert galaxy whose actively accreting black hole has been monitored for decades to trace the structure of gas swirling near its event horizon.",
     "suggested_pixscale": 0.4,
     "type": "Seyfert galaxy",
-    "constellation": "Boötes",
+    "constellation": "Bo\u00f6tes",
     "humanFact": "Astronomers have been watching this galaxy's black hole flicker and feed for more than forty years."
   },
   {
@@ -319,7 +319,7 @@
     "suggested_pixscale": 0.7,
     "type": "Elliptical galaxy",
     "constellation": "Virgo",
-    "humanFact": "The black hole itself is invisible — what you're looking at is the galaxy and glowing matter swirling around it."
+    "humanFact": "The black hole itself is invisible \u2014 what you're looking at is the galaxy and glowing matter swirling around it."
   },
   {
     "id": "ngc4676",

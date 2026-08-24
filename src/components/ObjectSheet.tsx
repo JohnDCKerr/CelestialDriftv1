@@ -152,7 +152,7 @@ export default function ObjectSheet({ target, open, onClose, onSavedChange }: Pr
                 <span>Dec (deg)</span>
                 <span>{target.dec_deg.toFixed(5)}</span>
               </div>
-              
+              <a
                 className="cd-sheet__more-link"
                 href={`https://www.legacysurvey.org/viewer?ra=${target.ra_deg.toFixed(5)}&dec=${target.dec_deg.toFixed(
                   5

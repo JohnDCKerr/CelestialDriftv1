@@ -24,10 +24,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Build (base path = /CelestialDriftv1/)
-        run: npm run build
-        env:
-          VITE_BASE: /CelestialDriftv1/
+      - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
