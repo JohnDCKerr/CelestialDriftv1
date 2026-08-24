@@ -26,6 +26,8 @@ export interface Destination {
   distance_mly?: number | null;
   distance_ly?: number | null;
   description: string;
+  /** One short, plain-language sentence conveying scale, time, or strangeness. Shown with more weight than technical metadata. */
+  humanFact?: string;
   suggested_pixscale: number;
   type: string;
   constellation: string;
@@ -45,6 +47,7 @@ export interface SkyTarget {
     distance_mly?: number | null;
     distance_ly?: number | null;
     description?: string | null;
+    humanFact?: string | null;
   };
 }
 
