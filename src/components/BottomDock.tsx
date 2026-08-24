@@ -42,7 +42,7 @@ export default function BottomDock({ active, onSelect, hudSuppressed }: Props) {
         onClick={() => onSelect("wormhole")}
         aria-label="Wormhole — take me somewhere"
       >
-        <WormholeIcon width={26} height={26} />
+        <WormholeIcon width={21} height={21} />
       </button>
 
       <nav className="cd-dock" aria-label="Destinations">

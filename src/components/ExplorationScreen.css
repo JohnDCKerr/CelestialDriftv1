@@ -113,6 +113,67 @@
 }
 
 /* --- Arrival label: brief, then gone --- */
+/* --- Wormhole ring-burst overlay --- */
+.cd-warp-rings {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cd-black);
+  overflow: hidden;
+  animation: cd-warp-rings-fade 850ms ease forwards;
+}
+
+.cd-warp-rings span {
+  position: absolute;
+  border: 1.5px solid var(--cd-phosphor);
+  border-radius: 50%;
+  opacity: 0;
+  animation: cd-warp-ring-expand 850ms ease-out forwards;
+}
+
+.cd-warp-rings span:nth-child(1) {
+  animation-delay: 0ms;
+}
+.cd-warp-rings span:nth-child(2) {
+  animation-delay: 90ms;
+}
+.cd-warp-rings span:nth-child(3) {
+  animation-delay: 180ms;
+}
+.cd-warp-rings span:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+@keyframes cd-warp-ring-expand {
+  0% {
+    width: 6px;
+    height: 6px;
+    opacity: 0.9;
+    box-shadow: 0 0 24px var(--cd-phosphor-glow);
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    width: 180vmax;
+    height: 180vmax;
+    opacity: 0;
+  }
+}
+
+@keyframes cd-warp-rings-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .cd-arrival {
   position: absolute;
   top: 42%;

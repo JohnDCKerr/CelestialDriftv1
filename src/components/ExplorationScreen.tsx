@@ -21,8 +21,12 @@ const SETTLE_DEBOUNCE_MS = 480;
 
 // Warp (wormhole) timing: a brief "falling forward" phase, then a blend
 // into the new destination. Kept short and elegant, not an arcade effect.
-const WARP_ACCEL_MS = 420;
-const WARP_CROSSFADE_MS = 420;
+// Wormhole ring-burst overlay: briefly, opaquely covers the screen while
+// the real crossfade to the destination happens invisibly underneath, then
+// clears to reveal the already-loaded real image. Not real imagery itself —
+// purely a transition effect — which is fine; only the actual viewing
+// experience (panning/zooming/looking at an object) needs to be real.
+const RINGS_DURATION_MS = 850;
 const PLAIN_CROSSFADE_MS = 380;
 const ARRIVAL_LABEL_MS = 2200;
 const HINT_VISIBLE_MS = 3600;
@@ -66,6 +70,8 @@ export default function ExplorationScreen({
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [layers, setLayers] = useState<RenderLayer[]>([]);
   const [arrivalLabel, setArrivalLabel] = useState<string | null>(null);
+  const [warpRingsVisible, setWarpRingsVisible] = useState(false);
+  const ringsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Live gesture transform — applied to the whole layer stack together while
   // actively dragging/pinching, so old + incoming imagery pan in unison.
@@ -134,12 +140,25 @@ export default function ExplorationScreen({
     return () => ro.disconnect();
   }, []);
 
+  // Belt-and-suspenders defense against native pinch-zoom fighting with our
+  // own custom pinch handling. `touch-action: none` (see .cd-explore in the
+  // CSS) should already prevent this, but some iOS Safari versions honor
+  // that inconsistently for accessibility reasons — a native, non-passive
+  // touchmove listener that blocks multi-touch gestures is more reliable.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const blockMultiTouch = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    el.addEventListener("touchmove", blockMultiTouch, { passive: false });
+    return () => el.removeEventListener("touchmove", blockMultiTouch);
+  }, []);
+
   const requestKey = `${target.ra_deg.toFixed(4)}:${target.dec_deg.toFixed(4)}:${target.pixscale.toFixed(3)}`;
 
-  // Cross-fade the incoming image in over the outgoing one(s), rather than a
-  // hard swap. If `warp` is true, first gives the outgoing layer a brief
-  // "falling forward" treatment (scale + blur + dim) before blending.
-  //
+  // Cross-fade the incoming image in over the outgoing one, rather than a
+  // hard swap.
   // Every async step below (both animation frames, and the cleanup timeout)
   // is guarded against `activeTransitionId`. Without this, firing two
   // transitions in quick succession (e.g. tapping zoom twice, or panning
@@ -147,73 +166,41 @@ export default function ExplorationScreen({
   // delayed cleanup step run *after* a newer one had already taken over —
   // wiping out the newer image mid-fade and causing a visible flicker/glitch.
   // Only the most recently started transition is ever allowed to touch state.
-  const runTransition = useCallback(
-    (url: string, warp: boolean, arrivalName: string | null) => {
-      const incomingId = ++nextLayerId.current;
-      activeTransitionId.current = incomingId;
+  //
+  // Wormhole no longer gets special treatment here — the green ring overlay
+  // (see warpRingsVisible below) handles the "falling through space" feel by
+  // briefly covering the screen while this same plain crossfade runs
+  // invisibly underneath, so by the time the rings clear, the destination
+  // is already sitting there correctly loaded.
+  const runTransition = useCallback((url: string) => {
+    const incomingId = ++nextLayerId.current;
+    activeTransitionId.current = incomingId;
 
-      const startCrossfade = () => {
+    setLayers((prev) => [
+      ...prev,
+      { id: incomingId, url, opacity: 0, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 },
+    ]);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         if (activeTransitionId.current !== incomingId) return;
-
-        setLayers((prev) => [
-          ...prev,
-          {
-            id: incomingId,
-            url,
-            opacity: 0,
-            transform: warp ? "scale(1.12)" : "scale(1)",
-            filter: warp ? "blur(6px)" : "blur(0px)",
-            transitionMs: 0,
-          },
-        ]);
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (activeTransitionId.current !== incomingId) return;
-            const ms = warp ? WARP_CROSSFADE_MS : PLAIN_CROSSFADE_MS;
-            setLayers((prev) =>
-              prev.map((l) =>
-                l.id === incomingId
-                  ? { ...l, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: ms }
-                  : { ...l, opacity: 0, transitionMs: ms }
-              )
-            );
-          });
-        });
-
-        if (transitionTimer.current) clearTimeout(transitionTimer.current);
-        transitionTimer.current = setTimeout(
-          () => {
-            if (activeTransitionId.current !== incomingId) return;
-            setLayers((prev) =>
-              prev.filter((l) => l.id === incomingId).map((l) => ({ ...l, transitionMs: 0 }))
-            );
-            setStatus("ready");
-            if (warp) {
-              if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
-              setArrivalLabel(arrivalName);
-              arrivalTimer.current = setTimeout(() => setArrivalLabel(null), ARRIVAL_LABEL_MS);
-            }
-          },
-          (warp ? WARP_CROSSFADE_MS : PLAIN_CROSSFADE_MS) + 40
-        );
-      };
-
-      if (warp) {
         setLayers((prev) =>
-          prev.map((l, idx) =>
-            idx === prev.length - 1
-              ? { ...l, opacity: 0.22, transform: "scale(1.55)", filter: "blur(16px)", transitionMs: WARP_ACCEL_MS }
-              : l
+          prev.map((l) =>
+            l.id === incomingId
+              ? { ...l, opacity: 1, transitionMs: PLAIN_CROSSFADE_MS }
+              : { ...l, opacity: 0, transitionMs: PLAIN_CROSSFADE_MS }
           )
         );
-        setTimeout(startCrossfade, WARP_ACCEL_MS);
-      } else {
-        startCrossfade();
-      }
-    },
-    []
-  );
+      });
+    });
+
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    transitionTimer.current = setTimeout(() => {
+      if (activeTransitionId.current !== incomingId) return;
+      setLayers((prev) => prev.filter((l) => l.id === incomingId).map((l) => ({ ...l, transitionMs: 0 })));
+      setStatus("ready");
+    }, PLAIN_CROSSFADE_MS + 40);
+  }, []);
 
   // Load imagery whenever the committed target changes (new jump, wormhole, or a settled pan/zoom).
   useEffect(() => {
@@ -223,6 +210,17 @@ export default function ExplorationScreen({
     const isWarp = warpTick !== lastWarpTick.current;
     lastWarpTick.current = warpTick;
     const arrivalName = target.object?.name ?? null;
+
+    if (isWarp) {
+      if (ringsTimer.current) clearTimeout(ringsTimer.current);
+      if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
+      setWarpRingsVisible(true);
+      ringsTimer.current = setTimeout(() => {
+        setWarpRingsVisible(false);
+        setArrivalLabel(arrivalName);
+        arrivalTimer.current = setTimeout(() => setArrivalLabel(null), ARRIVAL_LABEL_MS);
+      }, RINGS_DURATION_MS);
+    }
 
     const key = cutoutCacheKey(target.ra_deg, target.dec_deg, target.pixscale);
     const cached = cutoutCache.get(key);
@@ -257,7 +255,7 @@ export default function ExplorationScreen({
         applyFirstEver(cached);
       } else {
         setStatus("ready");
-        runTransition(cached, isWarp, arrivalName);
+        runTransition(cached);
       }
       return;
     }
@@ -267,7 +265,8 @@ export default function ExplorationScreen({
     // rather than interrupting with a spinner.
     if (layers.length === 0) setStatus("loading");
 
-    preloadImage(url).then((ok) => {
+    const { promise, cancel } = preloadImage(url);
+    promise.then((ok) => {
       if (cancelled) return;
       if (ok) {
         cutoutCache.set(key, url);
@@ -275,7 +274,7 @@ export default function ExplorationScreen({
           applyFirstEver(url);
         } else {
           setStatus("ready");
-          runTransition(url, isWarp, arrivalName);
+          runTransition(url);
         }
       } else {
         setStatus("error");
@@ -284,6 +283,7 @@ export default function ExplorationScreen({
 
     return () => {
       cancelled = true;
+      cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey, viewportSize.w, viewportSize.h, warpTick]);
@@ -387,7 +387,7 @@ export default function ExplorationScreen({
       width: viewportSize.w,
       height: viewportSize.h,
     });
-    preloadImage(url).then((ok) => {
+    preloadImage(url).promise.then((ok) => {
       if (!ok) {
         setStatus("error");
         return;
@@ -399,7 +399,7 @@ export default function ExplorationScreen({
         setStatus("ready");
       } else {
         setStatus("ready");
-        runTransition(url, false, target.object?.name ?? null);
+        runTransition(url);
       }
     });
   };
@@ -473,6 +473,15 @@ export default function ExplorationScreen({
       )}
 
       <FirstRunHint visible={hintVisible} coarsePointer={!!coarsePointer} />
+
+      {warpRingsVisible && (
+        <div className="cd-warp-rings" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      )}
 
       {arrivalLabel && (
         <div className="cd-arrival" aria-live="polite">
