@@ -33,16 +33,17 @@ function destinationToTarget(d: Destination): SkyTarget {
   };
 }
 
-// The opening view is deliberately anonymous — the same general patch of
-// sky as the Whirlpool Galaxy (guaranteed good Legacy Survey coverage) but
-// pulled back and un-centered, so it reads as "open space with stars in
-// it" rather than "here is a famous named object." No object metadata is
-// attached, so tapping the crosshair honestly shows "You're here," not a
-// galaxy name — the discovery happens after the person starts drifting.
+// The opening view is deliberately anonymous — offset a few arcmin away
+// from the Whirlpool Galaxy's exact coordinates (same well-covered Legacy
+// Survey field, guaranteed good imagery) so the galaxy itself is out of
+// frame entirely. What's left is just the ordinary scattering of stars and
+// faint background galaxies typical of that patch of sky — "I've arrived
+// somewhere," not "here is a famous named object." No object metadata is
+// attached, so tapping the crosshair honestly shows "You're here."
 const OPENING_TARGET: SkyTarget = {
-  ra_deg: 202.4696,
-  dec_deg: 47.19528,
-  pixscale: 2.2,
+  ra_deg: 202.7696,
+  dec_deg: 47.44528,
+  pixscale: 1.1,
 };
 
 type Panel = DockKey | null;
