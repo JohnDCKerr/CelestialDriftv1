@@ -89,17 +89,20 @@ export default function ObjectSheet({ target, open, onClose, onSavedChange }: Pr
         <div className="cd-sheet__body">
           {obj ? (
             <>
-              <div className="cd-sheet__eyebrow mono">{obj.catalog}</div>
               <h2 className="cd-sheet__title">{obj.name ?? obj.catalog}</h2>
-              <div className="cd-sheet__meta">
+
+              {obj.humanFact && <p className="cd-sheet__humanfact">{obj.humanFact}</p>}
+
+              <div className="cd-sheet__meta mono">
+                <span>{obj.catalog}</span>
                 {obj.type && <span>{obj.type}</span>}
                 {dist && <span>{dist}</span>}
               </div>
+
               {obj.description && <p className="cd-sheet__desc">{obj.description}</p>}
             </>
           ) : (
             <>
-              <div className="cd-sheet__eyebrow mono">Legacy Surveys DR11</div>
               <h2 className="cd-sheet__title">You&rsquo;re here</h2>
               <p className="cd-sheet__desc">
                 This point isn&rsquo;t in the curated catalog yet — just a real patch of observed sky.
@@ -149,7 +152,7 @@ export default function ObjectSheet({ target, open, onClose, onSavedChange }: Pr
                 <span>Dec (deg)</span>
                 <span>{target.dec_deg.toFixed(5)}</span>
               </div>
-              <a
+              
                 className="cd-sheet__more-link"
                 href={`https://www.legacysurvey.org/viewer?ra=${target.ra_deg.toFixed(5)}&dec=${target.dec_deg.toFixed(
                   5
@@ -160,9 +163,10 @@ export default function ObjectSheet({ target, open, onClose, onSavedChange }: Pr
                 Open in Legacy Survey viewer &rarr;
               </a>
               <p className="cd-sheet__more-note">
-                Additional technical fields (redshift, angular size, magnitude, alternate IDs) will appear here once
-                sourced from a live catalog service — this prototype omits any value it can&rsquo;t verify rather
-                than invent one.
+                Imagery: DESI Legacy Imaging Surveys DR11 (Legacy Surveys), courtesy D. Lang / Perimeter Institute
+                and the Legacy Surveys team. Additional technical fields (redshift, angular size, magnitude,
+                alternate IDs) will appear here once sourced from a live catalog service — this prototype omits
+                any value it can&rsquo;t verify rather than invent one.
               </p>
             </div>
           )}
