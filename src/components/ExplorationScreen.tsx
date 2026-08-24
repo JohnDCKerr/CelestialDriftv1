@@ -10,17 +10,38 @@ import {
 } from "../api/legacySurvey";
 import { clampDec, formatDec, formatRA, fovArcmin, wrapRa } from "../utils/coords";
 import { useIdle } from "../hooks/useIdle";
+import { hasSeenFirstRunHint, markFirstRunHintSeen } from "../utils/storage";
 import { CrosshairIcon, LayersIcon, MinusIcon, PlusIcon, WormholeIcon } from "./icons";
+import FirstRunHint from "./FirstRunHint";
 import "./ExplorationScreen.css";
 
 const MIN_PIXSCALE = 0.05;
 const MAX_PIXSCALE = 3.2;
 const SETTLE_DEBOUNCE_MS = 480;
 
+// Warp (wormhole) timing: a brief "falling forward" phase, then a blend
+// into the new destination. Kept short and elegant, not an arcade effect.
+const WARP_ACCEL_MS = 420;
+const WARP_CROSSFADE_MS = 420;
+const PLAIN_CROSSFADE_MS = 380;
+const ARRIVAL_LABEL_MS = 2200;
+const HINT_VISIBLE_MS = 3600;
+
 type LoadStatus = "loading" | "ready" | "error";
+
+interface RenderLayer {
+  id: number;
+  url: string;
+  opacity: number;
+  transform: string;
+  filter: string;
+  transitionMs: number;
+}
 
 interface Props {
   target: SkyTarget;
+  /** Bumped by the parent every time a wormhole jump is triggered, so this component can tell that specific target change apart from an ordinary pan/zoom/jump. */
+  warpTick: number;
   onTargetDrift: (next: SkyTarget) => void;
   hudSuppressed: boolean;
   onOpenSheet: () => void;
@@ -32,24 +53,68 @@ interface PointerState {
   y: number;
 }
 
-export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed, onOpenSheet, onWormhole }: Props) {
+export default function ExplorationScreen({
+  target,
+  warpTick,
+  onTargetDrift,
+  hudSuppressed,
+  onOpenSheet,
+  onWormhole,
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [viewportSize, setViewportSize] = useState({ w: 512, h: 512 });
   const [status, setStatus] = useState<LoadStatus>("loading");
-  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+  const [layers, setLayers] = useState<RenderLayer[]>([]);
+  const [arrivalLabel, setArrivalLabel] = useState<string | null>(null);
 
-  // Live gesture transform applied to the frozen image while panning/zooming.
+  // Live gesture transform — applied to the whole layer stack together while
+  // actively dragging/pinching, so old + incoming imagery pan in unison.
   const [liveTransform, setLiveTransform] = useState({ tx: 0, ty: 0, scale: 1 });
   const [isGesturing, setIsGesturing] = useState(false);
 
   const pointers = useRef<Map<number, PointerState>>(new Map());
-  const gestureStart = useRef<{ tx: number; ty: number; dist: number; midX: number; midY: number } | null>(null);
+  const gestureStart = useRef<{ dist: number } | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accumulatedPixscale = useRef(target.pixscale);
+  const nextLayerId = useRef(0);
+  const lastWarpTick = useRef(warpTick);
+  const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const idle = useIdle(3800);
+  const idle = useIdle(3200);
   const chromeHidden = idle && !hudSuppressed;
+
+  // --- Opening-screen auto-drift: only ever active before the first-ever
+  // interaction of the session, and only on real, already-loaded imagery
+  // (no fake motion, no synthetic starfield — see conversation notes). It
+  // stops permanently the moment the person touches, scrolls, or taps
+  // anything, and never resumes for the rest of the session.
+  const [autoDrift, setAutoDrift] = useState(true);
+  const stopAutoDrift = useCallback(() => setAutoDrift(false), []);
+  useEffect(() => {
+    if (warpTick !== lastWarpTick.current) stopAutoDrift();
+  }, [warpTick, stopAutoDrift]);
+  useEffect(() => {
+    if (hudSuppressed) stopAutoDrift();
+  }, [hudSuppressed, stopAutoDrift]);
+
+  // --- First-run hint (once, ever) ---
+  const [hintVisible, setHintVisible] = useState(false);
+  const hintEligible = useRef(!hasSeenFirstRunHint());
+  const hintShown = useRef(false);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coarsePointer = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches,
+    []
+  );
+
+  const dismissHint = useCallback(() => {
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    setHintVisible(false);
+    markFirstRunHintSeen();
+    hintEligible.current = false;
+  }, []);
 
   // Track container size so cutout requests roughly match viewport (capped at service limit).
   useEffect(() => {
@@ -70,10 +135,80 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
 
   const requestKey = `${target.ra_deg.toFixed(4)}:${target.dec_deg.toFixed(4)}:${target.pixscale.toFixed(3)}`;
 
-  // Load imagery whenever the committed target changes (new jump, or a settled pan/zoom).
+  // Cross-fade the incoming image in over the outgoing one(s), rather than a
+  // hard swap. If `warp` is true, first gives the outgoing layer a brief
+  // "falling forward" treatment (scale + blur + dim) before blending.
+  const runTransition = useCallback(
+    (url: string, warp: boolean, arrivalName: string | null) => {
+      const incomingId = ++nextLayerId.current;
+
+      const startCrossfade = () => {
+        setLayers((prev) => [
+          ...prev,
+          {
+            id: incomingId,
+            url,
+            opacity: 0,
+            transform: warp ? "scale(1.12)" : "scale(1)",
+            filter: warp ? "blur(6px)" : "blur(0px)",
+            transitionMs: 0,
+          },
+        ]);
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const ms = warp ? WARP_CROSSFADE_MS : PLAIN_CROSSFADE_MS;
+            setLayers((prev) =>
+              prev.map((l) =>
+                l.id === incomingId
+                  ? { ...l, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: ms }
+                  : { ...l, opacity: 0, transitionMs: ms }
+              )
+            );
+          });
+        });
+
+        if (transitionTimer.current) clearTimeout(transitionTimer.current);
+        transitionTimer.current = setTimeout(
+          () => {
+            setLayers((prev) =>
+              prev.filter((l) => l.id === incomingId).map((l) => ({ ...l, transitionMs: 0 }))
+            );
+            setStatus("ready");
+            if (warp) {
+              if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
+              setArrivalLabel(arrivalName);
+              arrivalTimer.current = setTimeout(() => setArrivalLabel(null), ARRIVAL_LABEL_MS);
+            }
+          },
+          (warp ? WARP_CROSSFADE_MS : PLAIN_CROSSFADE_MS) + 40
+        );
+      };
+
+      if (warp) {
+        setLayers((prev) =>
+          prev.map((l, idx) =>
+            idx === prev.length - 1
+              ? { ...l, opacity: 0.22, transform: "scale(1.55)", filter: "blur(16px)", transitionMs: WARP_ACCEL_MS }
+              : l
+          )
+        );
+        setTimeout(startCrossfade, WARP_ACCEL_MS);
+      } else {
+        startCrossfade();
+      }
+    },
+    []
+  );
+
+  // Load imagery whenever the committed target changes (new jump, wormhole, or a settled pan/zoom).
   useEffect(() => {
     let cancelled = false;
     accumulatedPixscale.current = target.pixscale;
+
+    const isWarp = warpTick !== lastWarpTick.current;
+    lastWarpTick.current = warpTick;
+    const arrivalName = target.object?.name ?? null;
 
     const key = cutoutCacheKey(target.ra_deg, target.dec_deg, target.pixscale);
     const cached = cutoutCache.get(key);
@@ -87,27 +222,47 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
       layer: DEFAULT_LAYER,
     });
 
-    if (cached) {
-      setDisplayUrl(cached);
+    const applyFirstEver = (u: string) => {
+      setLayers([{ id: ++nextLayerId.current, url: u, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
       setStatus("ready");
-      // Reset the gesture transform in the same tick as the swap, so the
-      // view holds its dragged/zoomed position right up until the freshly
-      // centered image is actually on screen — no premature snap-back.
-      setLiveTransform({ tx: 0, ty: 0, scale: 1 });
+      if (hintEligible.current && !hintShown.current) {
+        hintShown.current = true;
+        setHintVisible(true);
+        hintTimer.current = setTimeout(() => {
+          setHintVisible(false);
+          markFirstRunHintSeen();
+          hintEligible.current = false;
+        }, HINT_VISIBLE_MS);
+      }
+    };
+
+    if (cached) {
+      if (layers.length === 0) {
+        applyFirstEver(cached);
+      } else {
+        setStatus("ready");
+        runTransition(cached, isWarp, arrivalName);
+      }
       return;
     }
 
-    setStatus("loading");
+    // Only the very first image ever shown blocks on a loading state — every
+    // subsequent load keeps showing existing imagery (frozen/transformed)
+    // rather than interrupting with a spinner.
+    if (layers.length === 0) setStatus("loading");
+
     preloadImage(url).then((ok) => {
       if (cancelled) return;
       if (ok) {
         cutoutCache.set(key, url);
-        setDisplayUrl(url);
-        setStatus("ready");
-        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
+        if (layers.length === 0) {
+          applyFirstEver(url);
+        } else {
+          setStatus("ready");
+          runTransition(url, isWarp, arrivalName);
+        }
       } else {
         setStatus("error");
-        setLiveTransform({ tx: 0, ty: 0, scale: 1 });
       }
     });
 
@@ -115,7 +270,7 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestKey, viewportSize.w, viewportSize.h]);
+  }, [requestKey, viewportSize.w, viewportSize.h, warpTick]);
 
   const commitDrift = useCallback(
     (dxPx: number, dyPx: number, scaleFactor: number) => {
@@ -141,6 +296,8 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
 
   // --- Pointer (mouse + touch) handling: 1 finger pans, 2 fingers pinch-zoom ---
   const onPointerDown = (e: React.PointerEvent) => {
+    if (hintVisible) dismissHint();
+    if (autoDrift) stopAutoDrift();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -148,13 +305,7 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
 
     if (pointers.current.size === 2) {
       const pts = Array.from(pointers.current.values());
-      gestureStart.current = {
-        tx: liveTransform.tx,
-        ty: liveTransform.ty,
-        dist: distanceBetween(pts[0], pts[1]),
-        midX: (pts[0].x + pts[1].x) / 2,
-        midY: (pts[0].y + pts[1].y) / 2,
-      };
+      gestureStart.current = { dist: distanceBetween(pts[0], pts[1]) };
     }
   };
 
@@ -190,6 +341,8 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
 
   // --- Wheel (desktop) zoom ---
   const onWheel = (e: React.WheelEvent) => {
+    if (hintVisible) dismissHint();
+    if (autoDrift) stopAutoDrift();
     e.preventDefault();
     const delta = -e.deltaY;
     const scale = clampScale(1 + delta * 0.0018);
@@ -218,7 +371,19 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
       width: viewportSize.w,
       height: viewportSize.h,
     });
-    preloadImage(url).then((ok) => setStatus(ok ? "ready" : "error"));
+    preloadImage(url).then((ok) => {
+      if (!ok) {
+        setStatus("error");
+        return;
+      }
+      if (layers.length === 0) {
+        setLayers([{ id: ++nextLayerId.current, url, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
+        setStatus("ready");
+      } else {
+        setStatus("ready");
+        runTransition(url, false, target.object?.name ?? null);
+      }
+    });
   };
 
   const fov = useMemo(
@@ -226,9 +391,13 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
     [target.pixscale, viewportSize]
   );
 
-  const transformStyle = {
+  // Slight (60ms) smoothing on the shared gesture transform — softens jitter
+  // without adding perceptible input lag — plus a gentler ease once a
+  // gesture settles back toward the frame.
+  const wrapTransition = isGesturing ? "transform 60ms linear" : "transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+  const wrapStyle: React.CSSProperties = {
     transform: `translate(${liveTransform.tx}px, ${liveTransform.ty}px) scale(${liveTransform.scale})`,
-    transition: isGesturing ? "none" : "transform 220ms ease-out",
+    transition: wrapTransition,
   };
 
   return (
@@ -242,21 +411,29 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
       onPointerLeave={endGesture}
       onWheel={onWheel}
     >
-      <div className="cd-explore__imagewrap" style={transformStyle}>
-        {displayUrl && (
-          <img
-            src={displayUrl}
-            alt={target.object?.name ?? "Real-sky survey imagery"}
-            className="cd-explore__image"
-            draggable={false}
-          />
-        )}
+      <div className="cd-explore__imagewrap" style={wrapStyle}>
+        <div className={`cd-explore__autodrift ${autoDrift ? "is-drifting" : ""}`}>
+          {layers.map((l) => (
+            <img
+              key={l.id}
+              src={l.url}
+              alt={target.object?.name ?? "Real-sky survey imagery"}
+              className="cd-explore__layer"
+              draggable={false}
+              style={{
+                opacity: l.opacity,
+                transform: l.transform,
+                filter: l.filter,
+                transition: `opacity ${l.transitionMs}ms linear, transform ${l.transitionMs}ms ease-out, filter ${l.transitionMs}ms ease-out`,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
-      {status === "loading" && (
+      {status === "loading" && layers.length === 0 && (
         <div className="cd-explore__loading">
           <div className="cd-explore__loading-pulse" />
-          <span className="mono">Acquiring survey image&hellip;</span>
         </div>
       )}
 
@@ -277,48 +454,46 @@ export default function ExplorationScreen({ target, onTargetDrift, hudSuppressed
         </div>
       )}
 
-      {/* Crosshair / target marker */}
+      <FirstRunHint visible={hintVisible} coarsePointer={!!coarsePointer} />
+
+      {arrivalLabel && (
+        <div className="cd-arrival" aria-live="polite">
+          {arrivalLabel}
+        </div>
+      )}
+
+      {/* Crosshair — quiet, doesn't dominate the center */}
       <button
         className={`cd-crosshair ${chromeHidden ? "is-hidden" : ""}`}
         onClick={onOpenSheet}
         aria-label="What am I looking at?"
       >
-        <CrosshairIcon width={30} height={30} />
+        <CrosshairIcon width={18} height={18} />
       </button>
 
-      {/* Top HUD: RA/Dec + region */}
+      {/* Top HUD: tiny, secondary — fades away entirely when idle */}
       <div className={`cd-hud-top ${chromeHidden ? "is-hidden" : ""}`}>
-        <div className="cd-hud-top__brand">
-          <span className="cd-hud-top__title">CELESTIAL DRIFT</span>
-          <span className="cd-hud-top__tagline mono">FLOAT THE COSMOS.</span>
-        </div>
         <div className="cd-hud-top__coords mono">
-          RA {formatRA(target.ra_deg)} &nbsp;DEC {formatDec(target.dec_deg)}
-          {target.object?.constellation && (
-            <>
-              {" "}
-              &nbsp;&middot;&nbsp;{target.object.constellation.toUpperCase()}
-            </>
-          )}
+          {formatRA(target.ra_deg)} &nbsp;{formatDec(target.dec_deg)}
+          {target.object?.constellation && <>&nbsp;&middot;&nbsp;{target.object.constellation}</>}
         </div>
       </div>
 
       {/* Zoom controls */}
       <div className={`cd-zoom ${chromeHidden ? "is-hidden" : ""}`}>
         <button className="cd-zoom__btn" onClick={() => stepZoom(1.4)} aria-label="Zoom in">
-          <PlusIcon width={18} height={18} />
+          <PlusIcon width={16} height={16} />
         </button>
         <button className="cd-zoom__btn" onClick={() => stepZoom(1 / 1.4)} aria-label="Zoom out">
-          <MinusIcon width={18} height={18} />
+          <MinusIcon width={16} height={16} />
         </button>
       </div>
 
-      {/* Bottom-left: layer + attribution */}
+      {/* Bottom-left: layer + attribution — required credit, kept minimal */}
       <div className={`cd-attribution ${chromeHidden ? "is-hidden" : ""}`}>
         <div className="cd-attribution__layer mono">
-          <LayersIcon width={14} height={14} /> Legacy Survey layer &middot; FOV {fov.toFixed(1)}&prime;
+          <LayersIcon width={11} height={11} /> Legacy Survey &middot; FOV {fov.toFixed(1)}&prime;
         </div>
-        <div className="cd-attribution__credit mono">Legacy Surveys / D. Lang (Perimeter Institute)</div>
       </div>
     </div>
   );
