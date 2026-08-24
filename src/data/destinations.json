@@ -10,7 +10,8 @@
     "description": "A grand-design spiral locked in a slow gravitational dance with its smaller companion, NGC 5195. Its arms are some of the clearest examples of spiral structure in the sky.",
     "suggested_pixscale": 0.9,
     "type": "Spiral galaxy",
-    "constellation": "Canes Venatici"
+    "constellation": "Canes Venatici",
+    "humanFact": "The light hitting your eyes tonight left this galaxy about 31 million years ago, long before humans existed."
   },
   {
     "id": "ngc1300",
@@ -23,7 +24,8 @@
     "description": "A large barred spiral galaxy seen nearly face-on. Its central bar funnels gas toward the galaxy's core, feeding new star formation along the way.",
     "suggested_pixscale": 0.55,
     "type": "Barred spiral galaxy",
-    "constellation": "Eridanus"
+    "constellation": "Eridanus",
+    "humanFact": "The bar of stars across its middle is funneling gas toward the galaxy's core, the way water spirals toward a drain."
   },
   {
     "id": "m87",
@@ -36,7 +38,8 @@
     "description": "A giant elliptical galaxy at the heart of the Virgo Cluster, home to a jet of plasma thousands of light-years long and the supermassive black hole first imaged directly by the Event Horizon Telescope.",
     "suggested_pixscale": 0.7,
     "type": "Elliptical galaxy",
-    "constellation": "Virgo"
+    "constellation": "Virgo",
+    "humanFact": "At its center sits the black hole from the first photograph ever taken of one — you're seeing the galaxy, not the hole itself."
   },
   {
     "id": "ngc4565",
@@ -49,7 +52,8 @@
     "description": "One of the sky's most striking edge-on spirals, sliced through the middle by a thin, dark dust lane.",
     "suggested_pixscale": 0.5,
     "type": "Edge-on spiral galaxy",
-    "constellation": "Coma Berenices"
+    "constellation": "Coma Berenices",
+    "humanFact": "This galaxy is a full-sized spiral like our own, just turned almost exactly edge-on, so it reads as a thin blade of light."
   },
   {
     "id": "ngc4038-39",
@@ -62,7 +66,8 @@
     "description": "Two spiral galaxies caught mid-collision, their stars flung into long tidal tails that give the pair its name. A preview of what may lie ahead for the Milky Way and Andromeda.",
     "suggested_pixscale": 0.7,
     "type": "Interacting galaxies",
-    "constellation": "Corvus"
+    "constellation": "Corvus",
+    "humanFact": "These two galaxies have been slowly colliding for hundreds of millions of years, and have hundreds of millions more to go."
   },
   {
     "id": "m104",
@@ -75,7 +80,8 @@
     "description": "A nearly edge-on spiral with an unusually large central bulge and a sharp, dark dust lane, giving it the silhouette of a wide-brimmed hat.",
     "suggested_pixscale": 0.55,
     "type": "Spiral galaxy",
-    "constellation": "Virgo"
+    "constellation": "Virgo",
+    "humanFact": "The dark band across its middle is a ring of dust wide enough to swallow thousands of solar systems."
   },
   {
     "id": "ngc891",
@@ -88,7 +94,8 @@
     "description": "An edge-on spiral often called a near-twin of the Milky Way as it might look from far away, complete with a dust lane knotted by star-forming clouds.",
     "suggested_pixscale": 0.6,
     "type": "Edge-on spiral galaxy",
-    "constellation": "Andromeda"
+    "constellation": "Andromeda",
+    "humanFact": "If you could see the Milky Way from far outside it, it might look almost exactly like this."
   },
   {
     "id": "m81",
@@ -101,7 +108,8 @@
     "description": "A grand-design spiral and one of the closest large galaxies to the Milky Way, gravitationally bound to its turbulent neighbor M82.",
     "suggested_pixscale": 0.8,
     "type": "Spiral galaxy",
-    "constellation": "Ursa Major"
+    "constellation": "Ursa Major",
+    "humanFact": "This is one of the closest large galaxies to our own — close enough that its gravity is slowly reshaping its neighbor."
   },
   {
     "id": "m82",
@@ -114,7 +122,8 @@
     "description": "A starburst galaxy undergoing an intense burst of star formation, likely triggered by its close pass with M81. Outflows of hot gas stream from its disc.",
     "suggested_pixscale": 0.55,
     "type": "Starburst galaxy",
-    "constellation": "Ursa Major"
+    "constellation": "Ursa Major",
+    "humanFact": "A close pass with its neighbor M81 set off a burst of star formation so violent that gas is still blasting outward today."
   },
   {
     "id": "m101",
@@ -127,7 +136,8 @@
     "description": "A large, face-on spiral with sweeping, asymmetric arms studded with star-forming regions, likely shaped by past gravitational interactions.",
     "suggested_pixscale": 0.8,
     "type": "Spiral galaxy",
-    "constellation": "Ursa Major"
+    "constellation": "Ursa Major",
+    "humanFact": "This galaxy's arms are lopsided, likely stretched out of shape by a smaller galaxy passing too close."
   },
   {
     "id": "ngc6946",
@@ -140,7 +150,8 @@
     "description": "A face-on spiral nicknamed for the unusually high number of supernovae observed within it over the past century.",
     "suggested_pixscale": 0.7,
     "type": "Spiral galaxy",
-    "constellation": "Cepheus"
+    "constellation": "Cepheus",
+    "humanFact": "Astronomers have watched ten stars explode in this one galaxy over the last century alone — an unusually high number."
   },
   {
     "id": "ngc253",
@@ -153,7 +164,8 @@
     "description": "A dusty starburst spiral, one of the brightest galaxies in the sky outside the Local Group and a favorite target of southern-sky imaging surveys.",
     "suggested_pixscale": 0.7,
     "type": "Starburst spiral galaxy",
-    "constellation": "Sculptor"
+    "constellation": "Sculptor",
+    "humanFact": "This galaxy is forming new stars so fast that it outshines most others its size."
   },
   {
     "id": "ngc7331",
@@ -166,7 +178,8 @@
     "description": "Sometimes called a twin of the Milky Way in size and structure, this tilted spiral anchors a small group of more distant background galaxies nicknamed the Deer Lick Group.",
     "suggested_pixscale": 0.55,
     "type": "Spiral galaxy",
-    "constellation": "Pegasus"
+    "constellation": "Pegasus",
+    "humanFact": "This galaxy is close to the same size and shape as the Milky Way — a mirror of home, 40 million years in the past."
   },
   {
     "id": "ngc7293",
@@ -179,7 +192,8 @@
     "description": "One of the closest planetary nebulae to Earth, formed by a dying sun-like star shedding its outer layers into space.",
     "suggested_pixscale": 0.65,
     "type": "Planetary nebula",
-    "constellation": "Aquarius"
+    "constellation": "Aquarius",
+    "humanFact": "This is what a star like our Sun will look like in its final centuries, breathing its outer layers back into space."
   },
   {
     "id": "m57",
@@ -192,7 +206,8 @@
     "description": "A glowing shell of gas cast off by a dying star, forming the ring shape that made it one of the first planetary nebulae ever discovered.",
     "suggested_pixscale": 0.27,
     "type": "Planetary nebula",
-    "constellation": "Lyra"
+    "constellation": "Lyra",
+    "humanFact": "The star that made this ring is still there, a tiny white ember burning at the exact center."
   },
   {
     "id": "ngc6543",
@@ -205,7 +220,8 @@
     "description": "A planetary nebula with an intricate, layered structure of shells and knots, thought to result from a complex history of outbursts from its central star.",
     "suggested_pixscale": 0.35,
     "type": "Planetary nebula",
-    "constellation": "Draco"
+    "constellation": "Draco",
+    "humanFact": "The layered shells around this dying star record repeated outbursts, like rings written in light instead of wood."
   },
   {
     "id": "m27",
@@ -218,7 +234,8 @@
     "description": "One of the brightest planetary nebulae in the sky, its double-lobed shape formed as a dying star's outer layers expanded outward in two directions.",
     "suggested_pixscale": 0.5,
     "type": "Planetary nebula",
-    "constellation": "Vulpecula"
+    "constellation": "Vulpecula",
+    "humanFact": "This is roughly what our own Sun will look like in about five billion years."
   },
   {
     "id": "ngc246",
@@ -231,7 +248,8 @@
     "description": "A planetary nebula with a mottled, uneven glow around a central pair of stars, giving it a hollow, skull-like appearance in deep images.",
     "suggested_pixscale": 0.5,
     "type": "Planetary nebula",
-    "constellation": "Cetus"
+    "constellation": "Cetus",
+    "humanFact": "Two faint stars orbit each other at the center of this cloud, all that remains of a star that once shone like the Sun."
   },
   {
     "id": "m106-bh",
@@ -244,7 +262,8 @@
     "description": "A spiral galaxy whose central supermassive black hole was one of the first to have its mass precisely measured, using water masers orbiting the galaxy's core.",
     "suggested_pixscale": 0.7,
     "type": "Seyfert galaxy",
-    "constellation": "Canes Venatici"
+    "constellation": "Canes Venatici",
+    "humanFact": "Astronomers measured the mass of this galaxy's black hole by tracking gas orbiting it at over a million miles per hour."
   },
   {
     "id": "3c273",
@@ -257,7 +276,8 @@
     "description": "The first quasar ever identified, and one of the brightest, powered by a supermassive black hole devouring matter at the center of a distant galaxy.",
     "suggested_pixscale": 0.35,
     "type": "Quasar",
-    "constellation": "Virgo"
+    "constellation": "Virgo",
+    "humanFact": "This single point of light outshines its entire host galaxy, powered by a black hole billions of times heavier than the Sun."
   },
   {
     "id": "m77-bh",
@@ -270,7 +290,8 @@
     "description": "A nearby spiral galaxy with an actively feeding supermassive black hole at its core, making it one of the closest and most studied Seyfert galaxies.",
     "suggested_pixscale": 0.6,
     "type": "Seyfert galaxy",
-    "constellation": "Cetus"
+    "constellation": "Cetus",
+    "humanFact": "Somewhere in this galaxy's bright core, matter is being pulled apart and swallowed right now."
   },
   {
     "id": "ngc5548",
@@ -283,7 +304,8 @@
     "description": "A well-studied Seyfert galaxy whose actively accreting black hole has been monitored for decades to trace the structure of gas swirling near its event horizon.",
     "suggested_pixscale": 0.4,
     "type": "Seyfert galaxy",
-    "constellation": "Boötes"
+    "constellation": "Boötes",
+    "humanFact": "Astronomers have been watching this galaxy's black hole flicker and feed for more than forty years."
   },
   {
     "id": "m87-bh",
@@ -296,7 +318,8 @@
     "description": "Home to M87*, the first black hole ever directly imaged, by the Event Horizon Telescope in 2019. The galaxy's relativistic jet spans thousands of light-years.",
     "suggested_pixscale": 0.7,
     "type": "Elliptical galaxy",
-    "constellation": "Virgo"
+    "constellation": "Virgo",
+    "humanFact": "The black hole itself is invisible — what you're looking at is the galaxy and glowing matter swirling around it."
   },
   {
     "id": "ngc4676",
@@ -309,7 +332,8 @@
     "description": "A pair of colliding spiral galaxies stretched into long, thin tidal tails by their mutual gravity, resembling two mice with long tails.",
     "suggested_pixscale": 0.4,
     "type": "Interacting galaxies",
-    "constellation": "Coma Berenices"
+    "constellation": "Coma Berenices",
+    "humanFact": "Each galaxy has flung a long tail of stars out behind it, torn loose by the other's gravity."
   },
   {
     "id": "cartwheel",
@@ -322,7 +346,8 @@
     "description": "A galaxy with a bright outer ring and a small compact core, likely the result of a smaller galaxy punching straight through its disc and sending ripples outward.",
     "suggested_pixscale": 0.3,
     "type": "Ring galaxy",
-    "constellation": "Sculptor"
+    "constellation": "Sculptor",
+    "humanFact": "This ring formed when a smaller galaxy punched straight through the middle of a larger one, like a stone dropped in a pond."
   },
   {
     "id": "hoags-object",
@@ -335,7 +360,8 @@
     "description": "One of the most perfectly circular ring galaxies known, with a nearly complete ring of young blue stars surrounding an older yellow core, separated by a gap of nearly empty space.",
     "suggested_pixscale": 0.15,
     "type": "Ring galaxy",
-    "constellation": "Serpens Caput"
+    "constellation": "Serpens Caput",
+    "humanFact": "For over seventy years, astronomers have debated why this galaxy is such a near-perfect circle."
   },
   {
     "id": "einstein-cross",
@@ -348,7 +374,8 @@
     "description": "A single distant quasar appears four times around a much closer foreground galaxy, its light bent into a cross shape by gravitational lensing.",
     "suggested_pixscale": 0.15,
     "type": "Gravitationally lensed quasar",
-    "constellation": "Pegasus"
+    "constellation": "Pegasus",
+    "humanFact": "This light left its source before the Sun existed, then got bent four separate ways around a closer galaxy on its way to you."
   },
   {
     "id": "arp220",
@@ -361,7 +388,8 @@
     "description": "The closest ultraluminous infrared galaxy to Earth, formed by the ongoing merger of two spiral galaxies and glowing brightly from a burst of buried star formation.",
     "suggested_pixscale": 0.3,
     "type": "Merging galaxy",
-    "constellation": "Serpens"
+    "constellation": "Serpens",
+    "humanFact": "Two galaxies are merging here so violently that most of the collision is hidden behind a wall of dust."
   },
   {
     "id": "stephans-quintet",
@@ -374,6 +402,7 @@
     "description": "A tight visual grouping of five galaxies, four of which are locked in a slow, repeated series of close encounters, distorting each other's spiral arms.",
     "suggested_pixscale": 0.35,
     "type": "Compact galaxy group",
-    "constellation": "Pegasus"
+    "constellation": "Pegasus",
+    "humanFact": "Four of these five galaxies have been slowly colliding with each other for hundreds of millions of years."
   }
 ]
