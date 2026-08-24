@@ -12,8 +12,7 @@ import "./BottomDock.css";
 
 export type DockKey = "wormhole" | "ngc" | "galaxies" | "nebulae" | "black_holes" | "weird" | "saved";
 
-const ITEMS: { key: DockKey; label: string; Icon: (p: { width?: number; height?: number }) => JSX.Element }[] = [
-  { key: "wormhole", label: "Wormhole", Icon: WormholeIcon },
+const SECONDARY: { key: Exclude<DockKey, "wormhole">; label: string; Icon: (p: { width?: number; height?: number }) => JSX.Element }[] = [
   { key: "ngc", label: "NGC", Icon: NgcIcon },
   { key: "galaxies", label: "Galaxies", Icon: GalaxyIcon },
   { key: "nebulae", label: "Nebulae", Icon: NebulaIcon },
@@ -28,20 +27,37 @@ interface Props {
   hudSuppressed: boolean;
 }
 
+/**
+ * Wormhole is the signature action — a large, elevated, glowing button on
+ * its own, clearly the primary thing to tap. Everything else (NGC jump,
+ * curated categories, saved) lives in a slim, quiet secondary row: real
+ * functionality, but visually in support of drifting/wormholing rather than
+ * competing with it.
+ */
 export default function BottomDock({ active, onSelect, hudSuppressed }: Props) {
   return (
-    <nav className={`cd-dock ${hudSuppressed ? "is-hidden" : ""}`} aria-label="Destinations">
-      {ITEMS.map(({ key, label, Icon }) => (
-        <button
-          key={key}
-          className={`cd-dock__item ${active === key ? "is-active" : ""}`}
-          onClick={() => onSelect(key)}
-          aria-pressed={active === key}
-        >
-          <Icon width={21} height={21} />
-          <span>{label}</span>
-        </button>
-      ))}
-    </nav>
+    <div className={`cd-dockwrap ${hudSuppressed ? "is-hidden" : ""}`}>
+      <button
+        className="cd-wormhole-fab"
+        onClick={() => onSelect("wormhole")}
+        aria-label="Wormhole — take me somewhere"
+      >
+        <WormholeIcon width={26} height={26} />
+      </button>
+
+      <nav className="cd-dock" aria-label="Destinations">
+        {SECONDARY.map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            className={`cd-dock__item ${active === key ? "is-active" : ""}`}
+            onClick={() => onSelect(key)}
+            aria-pressed={active === key}
+          >
+            <Icon width={17} height={17} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
   );
 }
