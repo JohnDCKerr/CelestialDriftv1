@@ -319,6 +319,30 @@ export default function ExplorationScreen({
     [target, onTargetDrift]
   );
 
+  // The instant a gesture ends, freeze exactly what's currently on screen
+  // into the (still-visible, about-to-be-replaced) image layer's own
+  // transform, then silently reset the shared wrapper to identity — in the
+  // same tick, so nothing visibly moves. This is what lets the eventual
+  // crossfade be a clean, motionless fade (old fades out exactly where it
+  // was, new fades in already centered) instead of a confusing "re-center
+  // AND change picture at once" once the new image finally arrives, which
+  // is what was reading as unsmooth / disorienting before.
+  //
+  // Uses the same visual clamp as rendering (never below scale 1) so what
+  // gets frozen exactly matches what was actually on screen — using the
+  // true unclamped scale here would cause a visible pop at release.
+  const freezeAndResetWrapper = useCallback((tx: number, ty: number, scale: number) => {
+    const visualScale = Math.max(1, scale);
+    setLayers((prev) =>
+      prev.map((l) => ({
+        ...l,
+        transform: `translate(${tx}px, ${ty}px) scale(${visualScale})`,
+        transitionMs: 0,
+      }))
+    );
+    setLiveTransform({ tx: 0, ty: 0, scale: 1 });
+  }, []);
+
   // --- Pointer (mouse + touch) handling: 1 finger pans, 2 fingers pinch-zoom ---
   const onPointerDown = (e: React.PointerEvent) => {
     if (hintVisible) dismissHint();
@@ -359,6 +383,7 @@ export default function ExplorationScreen({
       setIsGesturing(false);
       gestureStart.current = null;
       const { tx, ty, scale } = liveTransform;
+      freezeAndResetWrapper(tx, ty, scale);
       if (settleTimer.current) clearTimeout(settleTimer.current);
       settleTimer.current = setTimeout(() => commitDrift(-tx, -ty, scale), 60);
     }
@@ -377,7 +402,8 @@ export default function ExplorationScreen({
     wheelTimer.current = setTimeout(() => {
       setIsGesturing(false);
       setLiveTransform((t) => {
-        commitDrift(0, 0, t.scale);
+        freezeAndResetWrapper(t.tx, t.ty, t.scale);
+        commitDrift(-t.tx, -t.ty, t.scale);
         return t;
       });
     }, SETTLE_DEBOUNCE_MS);
