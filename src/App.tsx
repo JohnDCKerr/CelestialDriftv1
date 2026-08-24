@@ -11,7 +11,6 @@ import BottomDock, { type DockKey } from "./components/BottomDock";
 import ObjectSheet from "./components/ObjectSheet";
 import NGCJumpPanel from "./components/NGCJumpPanel";
 import CategoryPanel from "./components/CategoryPanel";
-import WormholeOverlay from "./components/WormholeOverlay";
 
 const destinations = destinationsData as Destination[];
 const ngcCatalog = ngcData as NgcEntry[];
@@ -29,57 +28,55 @@ function destinationToTarget(d: Destination): SkyTarget {
       distance_mly: d.distance_mly ?? null,
       distance_ly: d.distance_ly ?? null,
       description: d.description,
+      humanFact: d.humanFact ?? null,
     },
   };
 }
 
-// A curated jump-off point so first launch already has something interesting
-// centered rather than an arbitrary empty patch of sky.
-const START_TARGET: SkyTarget = destinationToTarget(
-  destinations.find((d) => d.id === "m51") ?? destinations[0]
-);
+// The opening view is deliberately anonymous — the same general patch of
+// sky as the Whirlpool Galaxy (guaranteed good Legacy Survey coverage) but
+// pulled back and un-centered, so it reads as "open space with stars in
+// it" rather than "here is a famous named object." No object metadata is
+// attached, so tapping the crosshair honestly shows "You're here," not a
+// galaxy name — the discovery happens after the person starts drifting.
+const OPENING_TARGET: SkyTarget = {
+  ra_deg: 202.4696,
+  dec_deg: 47.19528,
+  pixscale: 2.2,
+};
 
 type Panel = DockKey | null;
 
 export default function App() {
-  const [target, setTarget] = useState<SkyTarget>(START_TARGET);
-  const [previousTarget, setPreviousTarget] = useState<SkyTarget | null>(null);
+  const [target, setTarget] = useState<SkyTarget>(OPENING_TARGET);
   const [panel, setPanel] = useState<Panel>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [wormholeActive, setWormholeActive] = useState(false);
-  const [pendingWormholeTarget, setPendingWormholeTarget] = useState<SkyTarget | null>(null);
+  const [warpTick, setWarpTick] = useState(0);
   const [savedVersion, setSavedVersion] = useState(0); // bump to force Saved panel / bookmark icon refresh
 
   const closePanel = useCallback(() => setPanel(null), []);
 
-  const jumpTo = useCallback(
-    (next: SkyTarget, opts?: { openSheet?: boolean }) => {
-      setPreviousTarget(target);
-      setTarget(next);
-      setPanel(null);
-      setSheetOpen(opts?.openSheet !== false && !!next.object);
-    },
-    [target]
-  );
+  const jumpTo = useCallback((next: SkyTarget, opts?: { openSheet?: boolean }) => {
+    setTarget(next);
+    setPanel(null);
+    setSheetOpen(opts?.openSheet !== false && !!next.object);
+  }, []);
 
   const handleDockSelect = useCallback((key: DockKey) => {
     if (key === "wormhole") {
-      const pool = destinations;
-      const choice = pool[Math.floor(Math.random() * pool.length)];
-      setPendingWormholeTarget(destinationToTarget(choice));
-      setWormholeActive(true);
+      const choice = destinations[Math.floor(Math.random() * destinations.length)];
+      // Wormhole doesn't open the info sheet — the destination name flashes
+      // briefly over the imagery itself (see ExplorationScreen's arrival
+      // label), then fades. The full sheet stays one tap away via the
+      // crosshair, for anyone curious enough to ask "wait, what was that?"
+      setTarget(destinationToTarget(choice));
+      setSheetOpen(false);
+      setPanel(null);
+      setWarpTick((t) => t + 1);
       return;
     }
     setPanel((current) => (current === key ? null : key));
   }, []);
-
-  const handleWormholeComplete = useCallback(() => {
-    setWormholeActive(false);
-    if (pendingWormholeTarget) {
-      jumpTo(pendingWormholeTarget);
-      setPendingWormholeTarget(null);
-    }
-  }, [pendingWormholeTarget, jumpTo]);
 
   const categoryDestinations = useMemo(() => {
     const byCategory: Record<DestinationCategory, Destination[]> = {
@@ -96,20 +93,21 @@ export default function App() {
     <div className="cd-app">
       <ExplorationScreen
         target={target}
+        warpTick={warpTick}
         onTargetDrift={(t) => setTarget(t)}
-        hudSuppressed={panel !== null || sheetOpen || wormholeActive}
+        hudSuppressed={panel !== null || sheetOpen}
         onOpenSheet={() => setSheetOpen(true)}
         onWormhole={() => handleDockSelect("wormhole")}
       />
 
       <ObjectSheet
         target={target}
-        open={sheetOpen && !wormholeActive}
+        open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onSavedChange={() => setSavedVersion((v) => v + 1)}
       />
 
-      <BottomDock active={panel} onSelect={handleDockSelect} hudSuppressed={sheetOpen || wormholeActive} />
+      <BottomDock active={panel} onSelect={handleDockSelect} hudSuppressed={sheetOpen} />
 
       {panel === "ngc" && (
         <NGCJumpPanel catalog={ngcCatalog} onClose={closePanel} onJump={(t) => jumpTo(t)} />
@@ -132,14 +130,6 @@ export default function App() {
           onSelect={(d) => jumpTo(destinationToTarget(d))}
           onSelectSaved={(t) => jumpTo(t)}
           savedVersion={savedVersion}
-        />
-      )}
-
-      {wormholeActive && (
-        <WormholeOverlay
-          previousTarget={previousTarget}
-          nextTarget={pendingWormholeTarget}
-          onComplete={handleWormholeComplete}
         />
       )}
     </div>
