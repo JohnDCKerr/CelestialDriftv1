@@ -43,6 +43,7 @@ export default function BottomDock({ active, onSelect, hudSuppressed }: Props) {
         aria-label="Wormhole — take me somewhere"
       >
         <WormholeIcon width={21} height={21} />
+        <span className="cd-wormhole-fab__label">Wormhole</span>
       </button>
 
       <nav className="cd-dock" aria-label="Destinations">

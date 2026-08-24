@@ -619,6 +619,7 @@ export default function ExplorationScreen({
           <span />
           <span />
           <span />
+          <div className="cd-warp-rings__text">Onward!</div>
         </div>
       )}
 
