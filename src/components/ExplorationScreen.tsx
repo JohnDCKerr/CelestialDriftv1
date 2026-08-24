@@ -22,6 +22,8 @@ const SETTLE_DEBOUNCE_MS = 480;
 // tap or brush) rather than an intentional pan/zoom — no re-fetch happens.
 const MIN_COMMIT_PX = 6;
 const MIN_COMMIT_SCALE_DELTA = 0.02;
+// How long the first-launch intro's zoom-fade into the real sky takes.
+const INTRO_EXIT_MS = 900;
 
 // Warp (wormhole) timing: a brief "falling forward" phase, then a blend
 // into the new destination. Kept short and elegant, not an arcade effect.
@@ -81,6 +83,11 @@ export default function ExplorationScreen({
   // that it's still working.
   const [slowLoad, setSlowLoad] = useState(false);
   const slowLoadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // --- First-launch intro: spins while the very first image loads, then
+  // shrinks/fades away as that image zoom-fades in underneath it. ---
+  const [introPhase, setIntroPhase] = useState<"spinning" | "exiting" | "done">("spinning");
+  const introTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [layers, setLayers] = useState<RenderLayer[]>([]);
   const [arrivalLabel, setArrivalLabel] = useState<string | null>(null);
   const [warpRingsVisible, setWarpRingsVisible] = useState(false);
@@ -258,8 +265,32 @@ export default function ExplorationScreen({
     const applyFirstEver = (u: string) => {
       const id = ++nextLayerId.current;
       activeTransitionId.current = id;
-      setLayers([{ id, url: u, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: 0 }]);
+      // The very first image ever shown gets a proper intro: starts hidden,
+      // slightly zoomed and soft, then eases in as the spinning intro
+      // overlay (rendered separately, see introPhase) shrinks and fades
+      // away — a single "zoom-fade into the sky" moment rather than the
+      // image just abruptly appearing.
+      setLayers([{ id, url: u, opacity: 0, transform: "scale(1.1)", filter: "blur(12px)", transitionMs: 0 }]);
       setLiveTransform({ tx: 0, ty: 0, scale: 1 });
+      setIntroPhase("exiting");
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (activeTransitionId.current !== id) return;
+          setLayers((prev) =>
+            prev.map((l) =>
+              l.id === id ? { ...l, opacity: 1, transform: "scale(1)", filter: "blur(0px)", transitionMs: INTRO_EXIT_MS } : l
+            )
+          );
+        });
+      });
+
+      if (introTimer.current) clearTimeout(introTimer.current);
+      introTimer.current = setTimeout(() => {
+        if (activeTransitionId.current !== id) return;
+        setIntroPhase("done");
+      }, INTRO_EXIT_MS);
+
       setStatus("ready");
       if (hintEligible.current && !hintShown.current) {
         hintShown.current = true;
@@ -307,6 +338,7 @@ export default function ExplorationScreen({
         }
       } else {
         setStatus("error");
+        if (layers.length === 0) setIntroPhase("done");
       }
     });
 
@@ -545,9 +577,12 @@ export default function ExplorationScreen({
         </div>
       </div>
 
-      {status === "loading" && layers.length === 0 && (
-        <div className="cd-explore__loading">
-          <div className="cd-explore__loading-pulse" />
+      {introPhase !== "done" && (
+        <div className={`cd-intro ${introPhase === "exiting" ? "is-exiting" : ""}`} aria-hidden="true">
+          <div className="cd-intro__spinner">
+            <span />
+            <span />
+          </div>
         </div>
       )}
 
