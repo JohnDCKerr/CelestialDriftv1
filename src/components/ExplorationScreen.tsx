@@ -303,7 +303,7 @@ export default function ExplorationScreen({
       const decRad = (target.dec_deg * Math.PI) / 180;
       const arcsecPerPx = accumulatedPixscale.current;
       const dRaDeg = -((dxPx * arcsecPerPx) / 3600) / Math.max(0.15, Math.cos(decRad));
-      const dDecDeg = (dyPx * arcsecPerPx) / 3600;
+      const dDecDeg = -((dyPx * arcsecPerPx) / 3600);
 
       const moved = Math.abs(dxPx) > 1 || Math.abs(dyPx) > 1;
       const newRa = wrapRa(target.ra_deg + dRaDeg);
